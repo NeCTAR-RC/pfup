@@ -20,8 +20,7 @@ def check_module(module):
     return latest_version
 
 
-def check_modules(modules):
-    open_changes = get_gerrit_open_changes()
+def check_modules(modules, open_changes):
     new_modules = []
     found_update = False
     message = ''
@@ -58,11 +57,15 @@ def main():
     parser.add_argument('--gerrit-username', required=True)
     parser.add_argument('--gerrit-password', required=True)
     args = parser.parse_args()
+
+    open_changes = get_gerrit_open_changes(args.gerrit_username,
+                                           args.gerrit_password)
+
     data = args.modules_file.read()
     yaml_data = yaml.load(data)
     current_modules = yaml_data['modules_forge']
 
-    new_modules, message = check_modules(current_modules)
+    new_modules, message = check_modules(current_modules, open_changes)
 
     yaml_data['modules_forge'] = new_modules
     args.modules_file.seek(0)

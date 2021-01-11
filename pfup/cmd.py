@@ -6,7 +6,7 @@ import os
 import git
 import pygerrit2
 import requests
-import yaml
+import ruamel.yaml
 
 
 FORGE_URL = 'https://forgeapi.puppet.com/v3'
@@ -67,6 +67,8 @@ def main():
                                            args.gerrit_password)
 
     data = args.modules_file.read()
+    yaml = ruamel.yaml.YAML()
+    yaml.default_flow_style = False
     yaml_data = yaml.load(data)
     current_modules = yaml_data['modules_forge']
 
@@ -74,9 +76,7 @@ def main():
 
     yaml_data['modules_forge'] = new_modules
     args.modules_file.seek(0)
-    yaml.dump(yaml_data, args.modules_file,
-              default_flow_style=False,
-              encoding=('utf-8'))
+    yaml.dump(yaml_data, args.modules_file)
     args.modules_file.truncate()
     repo = git.Repo('.')
     changed_files = [item.a_path for item in repo.index.diff(None)]

@@ -1,4 +1,4 @@
 gitpython
 requests
 pygerrit2
-pyyaml
+ruamel.yaml

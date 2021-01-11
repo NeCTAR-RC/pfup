@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
+
 import git
 import pygerrit2
 import requests
@@ -54,8 +56,11 @@ def get_gerrit_open_changes(username, password):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('modules_file', type=argparse.FileType('r+'))
-    parser.add_argument('--gerrit-username', required=True)
-    parser.add_argument('--gerrit-password', required=True)
+    parser.add_argument('--gerrit-username',
+                        default=os.environ.get('GERRIT_USERNAME',
+                                               os.environ['USER']))
+    parser.add_argument('--gerrit-password',
+                        default=os.environ.get('GERRIT_PASSWORD'))
     args = parser.parse_args()
 
     open_changes = get_gerrit_open_changes(args.gerrit_username,

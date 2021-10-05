@@ -31,6 +31,7 @@ def check_modules(modules, open_changes):
         name, version = list(module.items())[0]
         if name.startswith('openstack'):
             print("Skipping openstack module")
+            new_modules.append(module)
             continue
         latest = check_module(name)
         if latest != version and not found_update:

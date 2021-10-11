@@ -86,7 +86,7 @@ def main():
     changed_files = [item.a_path for item in repo.index.diff(None)]
     if message and changed_files:
         repo.index.add(changed_files)
-        repo.index.commit(message)
+        repo.index.commit(message + '\n')
 
 
 if __name__ == '__main__':

@@ -22,7 +22,7 @@ def check_module(module):
     return latest_version
 
 
-def check_modules(modules, open_changes):
+def check_modules(modules, open_changes, constraints=[]):
     new_modules = []
     found_update = False
     message = ''
@@ -37,6 +37,11 @@ def check_modules(modules, open_changes):
         if latest != version and not found_update:
             message = "%s %s -> %s" % (name, version, latest)
             if message not in open_changes:
+                if constraints:
+                    if not check_constraint(name, latest, constraints):
+                        print("Skipping %s, due to constraints file" % name)
+                        new_modules.append(module)
+                        continue
                 print(message)
                 new_modules.append({name: str(latest)})
                 found_update = True
@@ -57,9 +62,29 @@ def get_gerrit_open_changes(username, password):
     return subjects
 
 
+def check_constraint(module_name, module_version, constraints_modules):
+    for module in constraints_modules:
+        name, version = list(module.items())[0]
+        if name == module_name and version == module_version:
+            return True
+    return False
+
+
+def modules_file_to_yaml(modules_file):
+    data = modules_file.read()
+    yaml = ruamel.yaml.YAML()
+    yaml.default_flow_style = False
+
+    return yaml, yaml.load(data)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('modules_file', type=argparse.FileType('r+'))
+    parser.add_argument('--constraints-modules-file',
+                        type=argparse.FileType('r+'),
+                        help='Module file with allowed versions to upgrade to',
+                        default=None)
     parser.add_argument('--gerrit-username',
                         default=os.environ.get('GERRIT_USERNAME',
                                                os.environ['USER']))
@@ -70,13 +95,14 @@ def main():
     open_changes = get_gerrit_open_changes(args.gerrit_username,
                                            args.gerrit_password)
 
-    data = args.modules_file.read()
-    yaml = ruamel.yaml.YAML()
-    yaml.default_flow_style = False
-    yaml_data = yaml.load(data)
-    current_modules = yaml_data['modules_forge']
+    yaml, yaml_data = modules_file_to_yaml(args.modules_file)
 
-    new_modules, message = check_modules(current_modules, open_changes)
+    constraints = modules_file_to_yaml(args.constraints_modules_file)[
+                  1]['modules_forge']if args.constraints_modules_file else None
+
+    new_modules, message = check_modules(yaml_data['modules_forge'],
+                                         open_changes,
+                                         constraints)
 
     yaml_data['modules_forge'] = new_modules
     args.modules_file.seek(0)

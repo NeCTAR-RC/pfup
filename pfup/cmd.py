@@ -13,6 +13,9 @@ FORGE_URL = 'https://forgeapi.puppet.com/v3'
 GERRIT_URL = 'http://review.rc.nectar.org.au'
 GERRIT_PROJECT = 'internal/puppet-library'
 
+# number of commits this will send up per run
+COMMIT_LIMIT = 1
+
 
 def check_module(module):
     module_url = '%s/modules/%s' % (FORGE_URL, module.replace('/', '-'))
@@ -24,7 +27,7 @@ def check_module(module):
 
 def check_modules(modules, open_changes, constraints=[]):
     new_modules = []
-    found_update = False
+    commits = 0
     message = ''
 
     for module in modules:
@@ -34,7 +37,7 @@ def check_modules(modules, open_changes, constraints=[]):
             new_modules.append(module)
             continue
         latest = check_module(name)
-        if latest != version and not found_update:
+        if latest != version and commits < COMMIT_LIMIT:
             message = "%s %s -> %s" % (name, version, latest)
             if message not in open_changes:
                 if constraints:
@@ -44,7 +47,7 @@ def check_modules(modules, open_changes, constraints=[]):
                         continue
                 print(message)
                 new_modules.append({name: str(latest)})
-                found_update = True
+                commits += 1
                 continue
             else:
                 print("Skipping %s, pending review exists" % name)
@@ -110,6 +113,7 @@ def main():
     args.modules_file.truncate()
     repo = git.Repo('.')
     changed_files = [item.a_path for item in repo.index.diff(None)]
+    return
     if message and changed_files:
         repo.index.add(changed_files)
         repo.index.commit(message + '\n')
